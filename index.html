@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — expense tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDE8DC;
+    --paper-2:#E4DDCC;
+    --ink:#26291F;
+    --ink-soft:#5B5A4E;
+    --ink-faint:#8C8A78;
+    --line:#C7BFA9;
+    --line-soft:#D9D2BE;
+    --walnut:#8A4A2B;
+    --walnut-soft:#F1DDCC;
+    --moss:#43604A;
+    --moss-soft:#DCE6D6;
+    --card:#F7F4EB;
+    --danger:#A23C2E;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  .page{
+    max-width:760px;
+    margin:0 auto;
+    padding:56px 28px 80px;
+  }
+  .masthead{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:18px;
+    margin-bottom:34px;
+  }
+  .masthead h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:34px;
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+  .masthead .right{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .masthead .date{
+    font-size:13px;
+    color:var(--ink-soft);
+    text-align:right;
+    line-height:1.5;
+  }
+  .gear-btn{
+    background:none;
+    border:1px solid var(--line);
+    border-radius:2px;
+    width:32px;
+    height:32px;
+    cursor:pointer;
+    color:var(--ink-soft);
+    font-size:15px;
+  }
+  .gear-btn:hover{ border-color:var(--ink); color:var(--ink); }
+
+  .config-panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:22px;
+    margin-bottom:32px;
+  }
+  .config-panel h2{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:19px;
+    margin:0 0 6px;
+  }
+  .config-panel p{
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+    margin:0 0 16px;
+  }
+  .config-panel .row{
+    display:flex;
+    gap:10px;
+  }
+  .config-panel input{
+    flex:1;
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:2px;
+  }
+  .config-panel button{
+    padding:9px 16px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:2px;
+    font-size:13px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .config-panel button:hover{ background:#3a3d30; }
+  .config-error{
+    font-size:12px;
+    color:var(--danger);
+    margin-top:8px;
+  }
+
+  .status-banner{
+    font-size:13px;
+    padding:10px 14px;
+    border-radius:2px;
+    margin-bottom:20px;
+  }
+  .status-banner.loading{ background:var(--card); color:var(--ink-soft); border:1px solid var(--line); }
+  .status-banner.error{ background:#F6E3DF; color:var(--danger); border:1px solid #E0BCB4; }
+
+  .summary{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    margin-bottom:36px;
+  }
+  .summary .cell{
+    background:var(--card);
+    padding:16px 18px;
+  }
+  .summary .cell .label{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .summary .cell .value{
+    font-family:'Fraunces',serif;
+    font-size:24px;
+    font-weight:500;
+  }
+  .summary .cell.balance .value.negative{ color:var(--danger); }
+  .summary .cell.income .value{ color:var(--moss); }
+  .summary .cell.spent .value{ color:var(--walnut); }
+
+  form.entry{
+    display:grid;
+    grid-template-columns:110px 1fr 130px 110px 40px;
+    gap:10px;
+    align-items:end;
+    margin-bottom:12px;
+    padding-bottom:22px;
+    border-bottom:2px solid var(--ink);
+  }
+  form.entry .field{ display:flex; flex-direction:column; gap:5px; }
+  form.entry label{
+    font-size:11px;
+    color:var(--ink-soft);
+  }
+  form.entry input, form.entry select{
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    padding:8px 9px;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--ink);
+    border-radius:2px;
+  }
+  form.entry input:focus, form.entry select:focus{
+    outline:none;
+    border-color:var(--ink);
+  }
+  .add-btn{
+    height:35px;
+    width:40px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    font-size:19px;
+    line-height:1;
+    cursor:pointer;
+    border-radius:2px;
+  }
+  .add-btn:hover{ background:#3a3d30; }
+  .add-btn:disabled{ opacity:0.5; cursor:default; }
+  .error-msg{
+    font-size:12px;
+    color:var(--danger);
+    margin:-6px 0 14px;
+    min-height:14px;
+  }
+
+  .filter-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:14px;
+  }
+  .filter-row select{
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    padding:6px 8px;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--ink-soft);
+    border-radius:2px;
+  }
+  .filter-row .count{
+    font-size:12px;
+    color:var(--ink-faint);
+  }
+
+  .ledger-group{ margin-bottom:26px; }
+  .ledger-group .day-label{
+    font-size:12px;
+    color:var(--ink-faint);
+    letter-spacing:0.02em;
+    padding:6px 0;
+    border-bottom:1px solid var(--line-soft);
+    margin-bottom:2px;
+  }
+  .entry-row{
+    display:grid;
+    grid-template-columns:1fr auto auto 22px;
+    gap:14px;
+    align-items:center;
+    padding:11px 4px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .entry-row:hover{ background:var(--paper-2); }
+  .entry-row .desc{
+    font-size:14px;
+  }
+  .entry-row .cat{
+    display:inline-block;
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:20px;
+    margin-left:9px;
+    position:relative;
+    top:-1px;
+  }
+  .entry-row .amt{
+    font-family:'Fraunces',serif;
+    font-size:15px;
+    font-weight:500;
+    text-align:right;
+    min-width:84px;
+  }
+  .entry-row .amt.expense{ color:var(--walnut); }
+  .entry-row .amt.income{ color:var(--moss); }
+  .entry-row .del{
+    background:none;
+    border:none;
+    color:var(--ink-faint);
+    cursor:pointer;
+    font-size:16px;
+    visibility:hidden;
+    padding:0;
+  }
+  .entry-row:hover .del{ visibility:visible; }
+  .entry-row .del:hover{ color:var(--danger); }
+
+  .empty{
+    text-align:center;
+    padding:60px 20px;
+    color:var(--ink-faint);
+  }
+  .empty .big{
+    font-family:'Fraunces',serif;
+    font-size:20px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+
+  .foot-note{
+    margin-top:30px;
+    font-size:11.5px;
+    color:var(--ink-faint);
+    text-align:center;
+  }
+  .hidden{ display:none; }
+
+  @media (max-width:600px){
+    form.entry{ grid-template-columns:1fr 1fr; }
+    form.entry .field.desc-field{ grid-column:1/-1; }
+    .summary{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="masthead">
+    <h1>Ledger</h1>
+    <div class="right">
+      <div class="date" id="today-label"></div>
+      <button class="gear-btn" id="gear-btn" aria-label="Sheet settings" title="Sheet settings">&#9881;</button>
+    </div>
+  </div>
+
+  <div class="config-panel" id="config-panel">
+    <h2>Connect your Google Sheet</h2>
+    <p>Paste the web app URL from your deployed Apps Script (the one ending in <code>/exec</code>). See the setup steps for how to get this.</p>
+    <div class="row">
+      <input type="text" id="script-url-input" placeholder="https://script.google.com/macros/s/.../exec">
+      <button id="save-url-btn">Connect</button>
+    </div>
+    <div class="config-error" id="config-error"></div>
+  </div>
+
+  <div id="status-banner" class="status-banner loading hidden"></div>
+
+  <div id="app-body" class="hidden">
+    <div class="summary">
+      <div class="cell income">
+        <div class="label">Income</div>
+        <div class="value" id="sum-income">₹0</div>
+      </div>
+      <div class="cell spent">
+        <div class="label">Spent</div>
+        <div class="value" id="sum-spent">₹0</div>
+      </div>
+      <div class="cell balance">
+        <div class="label">Balance</div>
+        <div class="value" id="sum-balance">₹0</div>
+      </div>
+    </div>
+
+    <form class="entry" id="entry-form">
+      <div class="field">
+        <label for="f-date">Date</label>
+        <input type="date" id="f-date" required>
+      </div>
+      <div class="field desc-field">
+        <label for="f-desc">Description</label>
+        <input type="text" id="f-desc" placeholder="Coffee with Priya" required>
+      </div>
+      <div class="field">
+        <label for="f-cat">Category</label>
+        <select id="f-cat">
+          <option>Food</option>
+          <option>Transport</option>
+          <option>Housing</option>
+          <option>Shopping</option>
+          <option>Bills</option>
+          <option>Health</option>
+          <option>Fun</option>
+          <option>Income</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-amt">Amount</label>
+        <input type="number" id="f-amt" placeholder="0" step="0.01" min="0" required>
+      </div>
+      <button type="submit" class="add-btn" id="add-btn" aria-label="Add entry">+</button>
+    </form>
+    <div class="error-msg" id="form-error"></div>
+
+    <div class="filter-row">
+      <select id="filter-cat">
+        <option value="all">All categories</option>
+      </select>
+      <span class="count" id="entry-count"></span>
+    </div>
+
+    <div id="ledger-body"></div>
+  </div>
+
+  <div class="foot-note">Entries are stored in your Google Sheet — open it any time to see the raw data.</div>
+</div>
+
+<script>
+const CATEGORY_COLORS = {
+  Food:      {bg:'#EFDCC7', fg:'#7A4A16'},
+  Transport: {bg:'#D8E1EC', fg:'#2C4A6E'},
+  Housing:   {bg:'#E3D9E9', fg:'#5A3B72'},
+  Shopping:  {bg:'#F3D9DD', fg:'#8B3547'},
+  Bills:     {bg:'#DDE3D2', fg:'#4A5C34'},
+  Health:    {bg:'#D6E7E2', fg:'#2E6A5B'},
+  Fun:       {bg:'#F5E3B8', fg:'#8A6110'},
+  Income:    {bg:'#DCE6D6', fg:'#43604A'},
+  Other:     {bg:'#E4DFD3', fg:'#5B5A4E'}
+};
+
+const CONFIG_KEY = 'gsheet-script-url';
+let scriptUrl = null;
+let entries = [];
+
+function fmt(n){
+  const rounded = Math.round(n * 100) / 100;
+  return '₹' + rounded.toLocaleString('en-IN', {minimumFractionDigits:0, maximumFractionDigits:2});
+}
+
+function todayISO(){
+  return new Date().toISOString().slice(0,10);
+}
+
+function dayLabel(iso){
+  const d = new Date(iso + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yest = new Date(today); yest.setDate(yest.getDate()-1);
+  const dISO = d.toISOString().slice(0,10);
+  if(dISO === today.toISOString().slice(0,10)) return 'Today';
+  if(dISO === yest.toISOString().slice(0,10)) return 'Yesterday';
+  return d.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+}
+
+function showStatus(kind, text){
+  const el = document.getElementById('status-banner');
+  el.className = 'status-banner ' + kind;
+  el.textContent = text;
+}
+function hideStatus(){
+  document.getElementById('status-banner').classList.add('hidden');
+}
+
+async function loadConfig(){
+  try{
+    scriptUrl = localStorage.getItem(CONFIG_KEY);
+  }catch(e){
+    scriptUrl = null;
+  }
+  if(scriptUrl){
+    document.getElementById('script-url-input').value = scriptUrl;
+    document.getElementById('config-panel').classList.add('hidden');
+    await loadEntries();
+  }
+}
+
+document.getElementById('gear-btn').addEventListener('click', ()=>{
+  document.getElementById('config-panel').classList.toggle('hidden');
+});
+
+document.getElementById('save-url-btn').addEventListener('click', async ()=>{
+  const val = document.getElementById('script-url-input').value.trim();
+  const errEl = document.getElementById('config-error');
+  errEl.textContent = '';
+  if(!val || !val.includes('script.google.com')){
+    errEl.textContent = 'That doesn\'t look like an Apps Script web app URL.';
+    return;
+  }
+  scriptUrl = val;
+  try{
+    localStorage.setItem(CONFIG_KEY, val);
+  }catch(e){
+    errEl.textContent = 'Connected for this session, but could not save the URL for next time.';
+  }
+  document.getElementById('config-panel').classList.add('hidden');
+  await loadEntries();
+});
+
+async function loadEntries(){
+  showStatus('loading', 'Loading your sheet...');
+  document.getElementById('app-body').classList.add('hidden');
+  try{
+    const res = await fetch(scriptUrl);
+    if(!res.ok) throw new Error('bad response');
+    entries = await res.json();
+    hideStatus();
+    document.getElementById('app-body').classList.remove('hidden');
+    render();
+  }catch(e){
+    showStatus('error', 'Could not reach the sheet. Check the URL, and that the deployment access is set to "Anyone".');
+  }
+}
+
+function render(){
+  const filterCat = document.getElementById('filter-cat').value;
+
+  const catSelect = document.getElementById('filter-cat');
+  const cats = Array.from(new Set(entries.map(e=>e.category))).sort();
+  const currentVal = catSelect.value;
+  catSelect.innerHTML = '<option value="all">All categories</option>' +
+    cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  catSelect.value = cats.includes(currentVal) ? currentVal : 'all';
+
+  let income = 0, spent = 0;
+  entries.forEach(e=>{
+    const amt = Number(e.amount) || 0;
+    if(e.kind === 'income') income += amt;
+    else spent += amt;
+  });
+  const balance = income - spent;
+
+  document.getElementById('sum-income').textContent = fmt(income);
+  document.getElementById('sum-spent').textContent = fmt(spent);
+  const balEl = document.getElementById('sum-balance');
+  balEl.textContent = fmt(balance);
+  balEl.classList.toggle('negative', balance < 0);
+
+  const shown = filterCat === 'all' ? entries : entries.filter(e=>e.category === filterCat);
+  document.getElementById('entry-count').textContent = shown.length + (shown.length===1 ? ' entry' : ' entries');
+
+  const body = document.getElementById('ledger-body');
+  body.innerHTML = '';
+
+  if(shown.length === 0){
+    body.innerHTML = `<div class="empty"><div class="big">Nothing recorded yet</div><div>Add your first entry above to start the ledger.</div></div>`;
+    return;
+  }
+
+  const sorted = [...shown].sort((a,b)=> (a.date < b.date ? 1 : a.date > b.date ? -1 : String(b.id).localeCompare(String(a.id))));
+
+  const groups = {};
+  sorted.forEach(e=>{
+    if(!groups[e.date]) groups[e.date] = [];
+    groups[e.date].push(e);
+  });
+
+  Object.keys(groups).sort((a,b)=> a < b ? 1 : -1).forEach(date=>{
+    const group = document.createElement('div');
+    group.className = 'ledger-group';
+    const label = document.createElement('div');
+    label.className = 'day-label';
+    label.textContent = dayLabel(date);
+    group.appendChild(label);
+
+    groups[date].forEach(e=>{
+      const row = document.createElement('div');
+      row.className = 'entry-row';
+      const colors = CATEGORY_COLORS[e.category] || CATEGORY_COLORS.Other;
+      row.innerHTML = `
+        <div class="desc">${escapeHtml(e.description)}<span class="cat" style="background:${colors.bg};color:${colors.fg}">${escapeHtml(e.category)}</span></div>
+        <div class="amt ${e.kind}">${e.kind==='income'?'+':'−'}${fmt(Number(e.amount)||0)}</div>
+        <div></div>
+        <button class="del" data-id="${e.id}" aria-label="Delete entry">×</button>
+      `;
+      group.appendChild(row);
+    });
+    body.appendChild(group);
+  });
+
+  body.querySelectorAll('.del').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      btn.disabled = true;
+      try{
+        await fetch(scriptUrl, {
+          method:'POST',
+          headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({action:'delete', id: btn.dataset.id})
+        });
+        await loadEntries();
+      }catch(e){
+        showStatus('error', 'Could not delete that entry. Try again.');
+      }
+    });
+  });
+}
+
+function escapeHtml(s){
+  const div = document.createElement('div');
+  div.textContent = s == null ? '' : String(s);
+  return div.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('f-date').value = todayISO();
+  document.getElementById('today-label').textContent = new Date().toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  loadConfig();
+});
+
+document.getElementById('filter-cat').addEventListener('change', render);
+
+document.getElementById('entry-form').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const errEl = document.getElementById('form-error');
+  errEl.textContent = '';
+
+  if(!scriptUrl){
+    errEl.textContent = 'Connect your Google Sheet first.';
+    return;
+  }
+
+  const date = document.getElementById('f-date').value;
+  const desc = document.getElementById('f-desc').value.trim();
+  const cat = document.getElementById('f-cat').value;
+  const amtRaw = document.getElementById('f-amt').value;
+  const amt = parseFloat(amtRaw);
+
+  if(!date){ errEl.textContent = 'Pick a date first.'; return; }
+  if(!desc){ errEl.textContent = 'Add a short description.'; return; }
+  if(!amtRaw || isNaN(amt) || amt <= 0){ errEl.textContent = 'Enter an amount greater than zero.'; return; }
+
+  const kind = cat === 'Income' ? 'income' : 'expense';
+  const addBtn = document.getElementById('add-btn');
+  addBtn.disabled = true;
+
+  try{
+    await fetch(scriptUrl, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({
+        action:'add',
+        id: Date.now(),
+        date, description: desc, category: cat,
+        amount: Math.round(amt * 100) / 100,
+        kind
+      })
+    });
+
+    document.getElementById('f-desc').value = '';
+    document.getElementById('f-amt').value = '';
+    document.getElementById('f-desc').focus();
+
+    await loadEntries();
+  }catch(e){
+    errEl.textContent = 'Could not save that entry. Check your connection and try again.';
+  }finally{
+    addBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
